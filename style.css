@@ -6,8 +6,6 @@ html, body{
 
 .container{
     display: flex;
-    gap: 20px;
-    padding: 20px;    
     height: 100%
 }
 
@@ -15,10 +13,19 @@ html, body{
     background-color: #B2B2B2;
     padding: 15px;
     flex: 1;
+    overflow-y: auto;
+}
+
+.block_body{
+    background-color: #ffffff;
+    border-radius: 15px;
+    padding: 15px;
+    margin: 0px 10px 20px;
+    height: 200px;
 }
 
 .middle_field{
     background-color: #FFFFFF;
     padding: 15px;
-    flex: 3;
+    flex: 4;
 }
