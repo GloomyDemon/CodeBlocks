@@ -1,4 +1,4 @@
-namespace backend;
+namespace CodeBlocks.Server;
 
 public class WeatherForecast
 {
