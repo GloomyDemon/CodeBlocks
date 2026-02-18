@@ -1,8 +1,0 @@
-<Solution>
-  <Project Path="CodeBlocks.AppHost/CodeBlocks.AppHost.csproj" />
-  <Project Path="codeblocks.client/codeblocks.client.esproj">
-    <Build />
-  </Project>
-  <Project Path="CodeBlocks.Server/CodeBlocks.Server.csproj" />
-  <Project Path="CodeBlocks.ServiceDefaults/CodeBlocks.ServiceDefaults.csproj" />
-</Solution>
