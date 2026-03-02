@@ -1,18 +1,27 @@
-﻿import type { IExecutable } from "../Interfaces/IExecutable.ts";
-import type { IContainer } from "../Interfaces/IContainer.ts";
-import type { INamed } from "../Interfaces/INamed.ts";
+﻿import type { IExecutable } from "../Interfaces/IExecutable.js";
+import type { IContainer } from "../Interfaces/IContainer.js";
+import type { INamed } from "../Interfaces/INamed.js";
 
-export class VoidFunc implements IExecutable, IContainer, INamed {
+export class VoidFunction implements IExecutable, IContainer, INamed {
+
     readonly #id: string;
+    get id(): string {
+        return this.#id;
+    }
+
     readonly #name: string;
+    get name(): string {
+        return this.#name;
+    }
+
     #blocks: IExecutable[] = [];
+    get blocks(): readonly IExecutable[] {
+        return this.#blocks;
+    }
+
     #blocksById: Map<string, IExecutable> = new Map();
     get blocksById(): ReadonlyMap<string, IExecutable> {
         return this.#blocksById;
-    }
-
-    get blocks(): readonly IExecutable[] {
-        return this.#blocks;
     }
 
     constructor(id: string, name: string) {
@@ -33,14 +42,6 @@ export class VoidFunc implements IExecutable, IContainer, INamed {
             this.#blocks.splice(index, 0, block);
         }
         this.#blocksById.set(block.id, block);
-    }
-
-    get id(): string {
-        return this.#id;
-    }
-
-    get name(): string {
-        return this.#name;
     }
 
     deleteBlock(index: number): IExecutable | undefined;

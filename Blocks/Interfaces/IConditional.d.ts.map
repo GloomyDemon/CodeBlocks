@@ -1,1 +1,0 @@
-{"version":3,"file":"IConditional.d.ts","sourceRoot":"","sources":["IConditional.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,UAAU,EAAE,MAAM,iBAAiB,CAAC;AAClD,OAAO,KAAK,EAAE,MAAM,EAAE,MAAM,aAAa,CAAC;AAE1C,MAAM,WAAW,YAAa,SAAQ,MAAM;IACxC,SAAS,EAAE,UAAU,CAAC,OAAO,CAAC,CAAC;IAC/B,KAAK,IAAI,OAAO,CAAC;CACpB"}

@@ -1,5 +1,5 @@
-﻿import type { IEvaluable } from "../Interfaces/IEvaluable.ts";
-import type { INamed } from "../Interfaces/INamed.ts";
+﻿import type { IEvaluable } from "../Interfaces/IEvaluable.js";
+import type { INamed } from "../Interfaces/INamed.js";
 
 export class Variable<T> implements INamed, IEvaluable<T> {
     readonly #id: string;
