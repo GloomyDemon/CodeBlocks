@@ -129,7 +129,34 @@ function createBlockTemplate(block: BlockData, blockColor: string) {
     container.textContent = block.text;
 
     container.addEventListener('mousedown', function(event) {
-        //clone block creation
+        event.preventDefault();
+        
+        const clone = container.cloneNode(true) as HTMLElement;
+        
+        clone.style.position = 'fixed';
+        clone.style.opacity = '0.8';
+        clone.style.pointerEvents = 'none';
+
+        var startX = event.clientX, startY = event.clientY,
+            newX = 0, newY = 0;
+
+        function onMouseMove(moveEvent: MouseEvent) {
+            newX = startX - event.clientX;
+            newY = startY - event.clientY;
+
+            startX = event.clientX;
+            startY = event.clientY;
+
+            clone.style.top = (clone.offsetTop - newY) + 'px';
+            clone.style.left = (clone.offsetLeft - newX) + 'px';
+        }
+
+        function onMouseUp(upEvent: MouseEvent) {
+            document.removeEventListener('mousemove', onMouseMove);
+        }
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
     });
 
     return container;
@@ -154,16 +181,12 @@ function createBlockLibrary() { //from array of categories //partly temp??
 
         categoryContainer.appendChild(categoryHeader);
 
-        //const blocksInCategoryContainer = document.createElement('div');
-
-        //blocksInCategoryContainer.className = 'category-blocks';
         for (let j = 0; j < category.blockArray.length; j++) {
             const block = category.blockArray[j];
             const blockContainer = createBlockTemplate(block, category.color);
             categoryContainer.appendChild(blockContainer);
         }
 
-        //categoryContainer.appendChild(blocksInCategoryContainer);
         blockLibrary.appendChild(categoryContainer);
     }
 }
