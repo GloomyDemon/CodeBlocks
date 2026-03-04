@@ -2,4 +2,21 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/Blocks/.vs
+/.vs/
+**/.vs/
+/.vs
+**/.vs
+
+# Node / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Root UI build artifacts
+script.js
+script.js.map
+
+# TypeScript incremental build info
+*.tsbuildinfo

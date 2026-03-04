@@ -1,0 +1,16 @@
+{
+  "name": "codeblocks-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json -w",
+    "serve": "http-server -c-1 -p 5500 .",
+    "clean": "powershell -NoProfile -Command \"Remove-Item -ErrorAction SilentlyContinue script.js,script.js.map\""
+  },
+  "devDependencies": {
+    "eslint": "^10.0.2",
+    "http-server": "^14.1.1",
+    "typescript": "^5.9.3"
+  }
+}
