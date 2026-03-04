@@ -3,8 +3,8 @@ import type { INamed } from "../Interfaces/INamed.js";
 
 export class Variable<T> implements INamed, IEvaluable<T> {
 
-    readonly #id: string;
-    get id(): string {
+    readonly #id: number;
+    get id(): number {
         return this.#id;
     }
     
@@ -13,19 +13,21 @@ export class Variable<T> implements INamed, IEvaluable<T> {
         return this.#name;
     }
 
-    #value: T;
+    #value: T = null as any;
     evaluate(): T {
         return this.#value;
     }
-    
+
     change(value: T): void {
         this.#value = value;
     }
 
-    constructor(id: string, name: string, value: T) {
+    constructor(id: number, name: string, value?: T) {
         this.#id = id;
         this.#name = name;
-        this.#value = value;
+        if (value) {
+            this.#value = value;
+        }
     }
     
 }

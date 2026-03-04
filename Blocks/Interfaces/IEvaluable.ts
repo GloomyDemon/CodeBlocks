@@ -1,5 +1,4 @@
-﻿import type { IValue } from "./IValue.js";
-
-export interface IEvaluable<T> extends IValue {
+﻿import type { IBlock } from "./IBlock.js";
+export interface IEvaluable<T> extends IBlock {
     evaluate(): T;
 }

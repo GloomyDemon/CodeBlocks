@@ -2,9 +2,10 @@
 import type { IExecutable } from "./IExecutable.js";
 
 export interface IContainer extends IBlock {
+
     blocks: readonly IExecutable[];
-    blocksById: ReadonlyMap<string, IExecutable>;
+    blocksById: ReadonlyMap<number, IExecutable>;
     addBlock(block: IExecutable, index: number): void;
-    deleteBlock(index: number): IExecutable | undefined;
-    deleteBlock(id: string): IExecutable | undefined;
+    deleteBlock(id: number): IExecutable | undefined;
+
 }
