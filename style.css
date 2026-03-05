@@ -18,7 +18,8 @@ body {
     padding: 5px;
 }
 
-.block-library-header {    
+.block-library-header {  
+    -webkit-user-select: none;  
     text-align: center;
     user-select: none;
     font-weight: bold;
@@ -35,12 +36,14 @@ body {
 }
 
 .category-header {
+    -webkit-user-select: none;
     margin-bottom: 20px;
     padding-left: 15px;
     user-select: none;
 }
 
 .template-block-body {
+    -webkit-user-select: none;
     border-radius: 5px;
     margin: 0px 0px 5px;
     padding: 10px;
@@ -54,6 +57,7 @@ body {
 }
 
 .block-body {
+    -webkit-user-select: none;
     border-radius: 5px;
     margin: 0px 0px 5px;
     padding: 10px;
@@ -66,4 +70,10 @@ body {
     background-color: #FFFFFF;
     padding: 15px;
     flex: 5;
+}
+
+#Workspace-description {
+    -webkit-user-select: none;
+    text-align: center;
+    user-select: none;
 }
