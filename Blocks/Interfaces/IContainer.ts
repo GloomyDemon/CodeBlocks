@@ -1,5 +1,5 @@
-﻿import type { IBlock } from "./IBlock.js";
-import type { IExecutable } from "./IExecutable.js";
+﻿import type { IBlock } from "./IBlock.ts";
+import type { IExecutable } from "./IExecutable.ts";
 
 export interface IContainer extends IBlock {
 

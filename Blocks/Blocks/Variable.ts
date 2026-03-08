@@ -1,7 +1,7 @@
-﻿import type { IEvaluable } from "../Interfaces/IEvaluable.js";
-import type { INamed } from "../Interfaces/INamed.js";
+﻿import type { IEvaluable } from "../Interfaces/IEvaluable.ts";
+import { IdGenerator } from "../Program/IdGenerator.ts"; 
 
-export class Variable<T> implements INamed, IEvaluable<T> {
+export class Variable<T> implements IEvaluable<T> {
 
     readonly #id: number;
     get id(): number {
@@ -13,21 +13,19 @@ export class Variable<T> implements INamed, IEvaluable<T> {
         return this.#name;
     }
 
-    #value: T = null as any;
+    #value: T;
     evaluate(): T {
-        return this.#value;
+        return this.#value as T;
     }
 
     change(value: T): void {
         this.#value = value;
     }
 
-    constructor(id: number, name: string, value?: T) {
-        this.#id = id;
+    constructor(name: string, value: T = undefined as T) {
+        this.#id = IdGenerator.generate();
         this.#name = name;
-        if (value) {
-            this.#value = value;
-        }
+        this.#value = value;
     }
     
 }

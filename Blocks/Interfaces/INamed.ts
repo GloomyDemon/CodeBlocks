@@ -1,4 +1,4 @@
-﻿import type { IBlock } from "./IBlock.js";
+﻿import type { IBlock } from "./IBlock.ts";
 
 export interface INamed extends IBlock {
     readonly name : string;

@@ -1,5 +1,5 @@
 ﻿import type { Scope } from "../Program/Scope.ts";
-import type { IBlock } from "./IBlock.js";
+import type { IBlock } from "./IBlock.ts";
 
 export interface IExecutable extends IBlock {
     readonly scope: Readonly<Scope>;
