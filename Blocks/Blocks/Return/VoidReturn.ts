@@ -1,7 +1,7 @@
-import type { IExecutable } from "../Interfaces/IExecutable.ts";
-import { IdGenerator } from "../Program/IdGenerator.ts";
-import { Scope } from "../Program/Scope.ts";
-import { VoidReturnException } from "../Program/VoidReturnException.ts";
+import type { IExecutable } from "../../Interfaces/IExecutable.ts";
+import { IdGenerator } from "../../Program/IdGenerator.ts";
+import { Scope } from "../../Program/Scope.ts";
+import { VoidReturnException } from "../../Program/VoidReturnException.ts";
 
 export class VoidReturn implements IExecutable {
     

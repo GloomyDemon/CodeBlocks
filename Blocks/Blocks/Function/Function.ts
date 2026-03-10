@@ -1,11 +1,11 @@
-﻿import type { IEvaluable } from "../Interfaces/IEvaluable.ts";
-import { ReturnException } from "../Program/ReturnException.ts";
+﻿import type { IEvaluable } from "../../Interfaces/IEvaluable.ts";
+import { ReturnException } from "../../Program/ReturnException.ts";
 import { VoidFunction } from "./VoidFunction.ts";
 
 export class Function<T> extends VoidFunction implements IEvaluable<T> {
     
     evaluate(): T {
-        for (const block of this.blocks) {
+        for (const block of this.blocks.blocks) {
             try {
                 block.execute();
             }

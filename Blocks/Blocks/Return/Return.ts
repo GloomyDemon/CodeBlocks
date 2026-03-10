@@ -1,7 +1,7 @@
-import type { IEvaluable } from "../Interfaces/IEvaluable.ts";
-import { Scope } from "../Program/Scope.ts";
-import { VoidReturn } from "../Blocks/VoidReturn.ts"
-import { ReturnException } from "../Program/ReturnException.ts";
+import type { IEvaluable } from "../../Interfaces/IEvaluable.ts";
+import { Scope } from "../../Program/Scope.ts";
+import { VoidReturn } from "./VoidReturn.ts"
+import { ReturnException } from "../../Program/ReturnException.ts";
 
 export class Return<T> extends VoidReturn {
     
@@ -15,7 +15,7 @@ export class Return<T> extends VoidReturn {
         this.#returnBlock = returnValue;
     }
 
-    execute(): void {
+    override execute(): void {
         throw new ReturnException<T>(this.returnValue);
     }
 
