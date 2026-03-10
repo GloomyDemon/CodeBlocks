@@ -15,7 +15,7 @@ export class Container<T extends IBlock> {
         
         this.deleteBlock(block.id);
 
-        if (!index) {
+        if (index === undefined) {
             this.#blocks.push(block);
         } else if (index < 0 || index > this.#blocks.length) {
             throw new RangeError(

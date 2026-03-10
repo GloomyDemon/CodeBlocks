@@ -7,7 +7,7 @@ import type { IEvaluable } from "../../Interfaces/IEvaluable.ts";
 import type { Variable } from "../Variable.ts";
 import { Container } from "../../Program/Container.ts";
 
-export class While implements IExecutable, IContainer, IConditional {
+export class For implements IExecutable, IContainer, IConditional {
 
     #variables: Container<Variable<unknown>> = new Container<Variable<unknown>>();
     get variables(): Readonly<Container<Variable<unknown>>> {
