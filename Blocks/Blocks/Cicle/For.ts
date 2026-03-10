@@ -23,6 +23,11 @@ export class While implements IExecutable, IContainer, IConditional {
         return false;
     }
 
+    #iterators: Container<IExecutable> = new Container<IExecutable>();
+    get iterators(): Readonly<Container<IExecutable>> {
+        return this.#iterators;
+    }
+
     readonly #scope: Scope;
     get scope(): Readonly<Scope> {
         return Object.freeze(this.#scope);
@@ -46,6 +51,7 @@ export class While implements IExecutable, IContainer, IConditional {
     execute(): void {
         while (this.check()) {
             this.#blocks.blocks.forEach(block => block.execute());
+            this.#iterators.blocks.forEach(iterator => iterator.execute());
         }
     }
 
