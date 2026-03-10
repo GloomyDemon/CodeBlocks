@@ -57,18 +57,17 @@ export class VoidFunction implements IExecutable, IContainer, INamed {
             let arg = args.at(i);
 
             if (param && arg) {
-                const paramValue = param.evaluate();
                 const argValue = arg.evaluate();
                 
-                if (typeof argValue !== typeof paramValue) {
+                if (arg.valueType !== param.valueType) {
                     throw new TypeError(
                         "Wrong argument type.",
                         {
                             cause: {
-                                comment: `Param ${i} expects ${typeof paramValue}, got ${typeof argValue} ` +
+                                comment: `Param ${i} expects ${param.valueType}, got ${arg.valueType} ` +
                                     `(value: ${JSON.stringify(argValue)})`,
-                                paramValueType: typeof paramValue,
-                                argValuType: typeof argValue
+                                paramValueType: param.valueType,
+                                argValuType: arg.valueType
                             }
                         }
                     );

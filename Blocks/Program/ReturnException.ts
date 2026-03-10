@@ -1,4 +1,5 @@
 import { VoidReturnException } from "./VoidReturnException.ts"
+import type { ValueType } from "./ValueType.ts";
 
 export class ReturnException<T> extends VoidReturnException {
 
@@ -7,8 +8,14 @@ export class ReturnException<T> extends VoidReturnException {
         return this.#value;
     }
 
-    constructor(value: T) {
+    readonly #valueType: ValueType;
+    get valueType(): ValueType {
+        return this.#valueType;
+    }
+
+    constructor(value: T, valueType: ValueType) {
         super();
         this.#value = value;
+        this.#valueType = valueType;
     }
 }

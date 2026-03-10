@@ -1,5 +1,5 @@
-﻿import type { IEvaluable } from "./IEvaluable.js";
-import type { IBlock } from "./IBlock.js";
+﻿import type { IEvaluable } from "./IEvaluable.ts";
+import type { IBlock } from "./IBlock.ts";
 
 export interface IConditional extends IBlock {
 

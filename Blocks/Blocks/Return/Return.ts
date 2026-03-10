@@ -16,7 +16,7 @@ export class Return<T> extends VoidReturn {
     }
 
     override execute(): void {
-        throw new ReturnException<T>(this.returnValue);
+        throw new ReturnException<T>(this.returnValue, this.#returnBlock.valueType);
     }
 
 }

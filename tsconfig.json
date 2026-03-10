@@ -9,7 +9,11 @@
     "outDir": ".",
     "sourceMap": true,
     "noEmitOnError": true,
-    "moduleResolution": "Bundler"
+    "moduleResolution": "nodenext",
+    "baseUrl": ".",
+    "paths": {
+      "../../Program/IdGenerator.ts": ["Blocks/Program/IdGenerator.ts"]
+    }
   },
   "include": ["./script.ts"],
   "exclude": []
