@@ -18,8 +18,7 @@ body {
     padding: 5px;
 }
 
-.block-library-header {  
-    -webkit-user-select: none;  
+.block-library-header {    
     text-align: center;
     user-select: none;
     font-weight: bold;
@@ -36,44 +35,35 @@ body {
 }
 
 .category-header {
-    -webkit-user-select: none;
     margin-bottom: 20px;
     padding-left: 15px;
     user-select: none;
 }
 
-.template-block-body {
-    -webkit-user-select: none;
-    border-radius: 5px;
-    margin: 0px 0px 5px;
-    padding: 10px;
-    user-select: none;
-    cursor: grab;
-    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.template-block-body:hover {
-    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-.block-body {
-    -webkit-user-select: none;
-    border-radius: 5px;
-    margin: 0px 0px 5px;
-    padding: 10px;
-    user-select: none;
-    cursor: grab;
-    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.workspace-body {
+.workspace {
+    position: relative;
     background-color: #FFFFFF;
     padding: 15px;
     flex: 5;
 }
 
-#Workspace-description {
-    -webkit-user-select: none;
-    text-align: center;
+.block {    
+    width: max-content;
+    border-radius: 5px;
+    margin: 0px 0px 5px;
+    padding: 10px;
     user-select: none;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: grab;
+}
+
+.block:hover {
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.block-draggable-clone {
+    cursor: grabbing;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    transition: none;
+    width: max-content;
 }
