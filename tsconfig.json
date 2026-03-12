@@ -1,19 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "target": "ES2018",
+    "module": "NodeNext",
+    "lib": ["ES2018", "DOM", "DOM.Iterable"],
     "strict": true,
     "skipLibCheck": true,
     "rootDir": ".",
     "outDir": ".",
     "sourceMap": true,
     "noEmitOnError": true,
-    "moduleResolution": "nodenext",
-    "baseUrl": ".",
-    "paths": {
-      "../../Program/IdGenerator.ts": ["Blocks/Program/IdGenerator.ts"]
-    }
+    "moduleResolution": "NodeNext"
   },
   "include": ["./script.ts"],
   "exclude": []
