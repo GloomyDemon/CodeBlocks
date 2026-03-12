@@ -24,6 +24,21 @@ body {
     font-weight: bold;
 }
 
+#run-adapter-btn {
+    margin-bottom: 8px;
+}
+
+#adapter-output {
+    margin-top: 10px;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: #1f1f1f;
+    color: #d4d4d4;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 .block-categories-list {
     background-color: #FFFFFF;
     border-radius: 5px;

@@ -1,26 +1,148 @@
+type BlockKind = 'varDecl' | 'assign' | 'if';
+
+type BlockTemplateData = {
+    kind: BlockKind;
+    label: string;
+    defaultPayload: Readonly<Record<string, unknown>>;
+};
+
+type WorkspaceBlockData = {
+    id: string;
+    kind: BlockKind;
+    payload: Readonly<Record<string, unknown>>;
+    x: number;
+    y: number;
+};
+
+type InterpreterBlockDraft = {
+    id: number;
+    kind: BlockKind;
+    payload: Readonly<Record<string, unknown>>;
+    x: number;
+    y: number;
+};
+
+type InterpreterProgramDraft = {
+    blocks: InterpreterBlockDraft[];
+};
+
 type CategoryData = { //temp
     name: string;
     color: string;
-    blockArray: string[];
+    blockArray: BlockTemplateData[];
 };
 
 const categoriesArray: CategoryData[] = [ //temp
     {
-        name: 'Category 1',
+        name: 'Variables',
         color: '#83a6da',
-        blockArray: ['1', '2', '3']
+        blockArray: [
+            { kind: 'varDecl', label: 'Declare variable', defaultPayload: { name: 'x', valueType: 'number' } }
+        ]
     },
     {
-        name: 'Category 2',
+        name: 'Statements',
         color: '#ec5d92',
-        blockArray: ['1', '2']
+        blockArray: [
+            { kind: 'assign', label: 'Assignment', defaultPayload: { name: 'x', value: 0 } },
+            { kind: 'if', label: 'If', defaultPayload: { condition: null } }
+        ]
     },
     {
-        name: 'Category 3',
+        name: 'Reserved',
         color: '#efd26b',
-        blockArray: ['1', '2']
+        blockArray: []
     }
 ];
+
+const workspaceBlocks: WorkspaceBlockData[] = [];
+let nextWorkspaceBlockId = 1;
+
+function createWorkspaceBlockId(): string {
+    return `wb-${nextWorkspaceBlockId++}`;
+}
+
+function addWorkspaceBlock(data: WorkspaceBlockData): void {
+    workspaceBlocks.push(data);
+}
+
+function removeWorkspaceBlock(id: string): void {
+    const index = workspaceBlocks.findIndex(block => block.id === id);
+    if (index >= 0) {
+        workspaceBlocks.splice(index, 1);
+    }
+}
+
+function updateWorkspaceBlockPosition(id: string, x: number, y: number): void {
+    const block = workspaceBlocks.find(item => item.id === id);
+    if (block) {
+        block.x = x;
+        block.y = y;
+    }
+}
+
+function getNumericIdFromWorkspaceId(workspaceId: string): number {
+    if (workspaceId.startsWith('wb-')) {
+        const numericPart = Number.parseInt(workspaceId.slice(3), 10);
+        if (!Number.isNaN(numericPart)) {
+            return numericPart;
+        }
+    }
+    return -1;
+}
+
+function normalizePayload(kind: BlockKind, payload: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {
+    const source = payload as Record<string, unknown>;
+
+    if (kind === 'varDecl') {
+        const name = typeof source.name === 'string' ? source.name : 'x';
+        const valueType = typeof source.valueType === 'string' ? source.valueType : 'number';
+        return { name, valueType };
+    }
+
+    if (kind === 'assign') {
+        const name = typeof source.name === 'string' ? source.name : 'x';
+        const value = typeof source.value === 'number' ? source.value : 0;
+        return { name, value };
+    }
+
+    return {
+        condition: source.condition ?? null
+    };
+}
+
+function buildInterpreterProgramDraft(): InterpreterProgramDraft {
+    const orderedBlocks = [...workspaceBlocks].sort((a, b) => {
+        if (a.y === b.y) {
+            return a.x - b.x;
+        }
+        return a.y - b.y;
+    });
+
+    return {
+        blocks: orderedBlocks.map((block) => ({
+            id: getNumericIdFromWorkspaceId(block.id),
+            kind: block.kind,
+            payload: normalizePayload(block.kind, block.payload),
+            x: block.x,
+            y: block.y
+        }))
+    };
+}
+
+function setupAdapterUI(): void {
+    const runAdapterButton = document.querySelector('#run-adapter-btn');
+    const adapterOutput = document.querySelector('#adapter-output');
+
+    if (!(runAdapterButton instanceof HTMLButtonElement) || !(adapterOutput instanceof HTMLElement)) {
+        return;
+    }
+
+    runAdapterButton.addEventListener('click', () => {
+        const programDraft = buildInterpreterProgramDraft();
+        adapterOutput.textContent = JSON.stringify(programDraft, null, 2);
+    });
+}
 
 class Block {
     private element: HTMLElement;
@@ -114,9 +236,12 @@ class Block {
         //will add other checks
 
         if (isOverWorkspace) {
-             this.element.style.position = 'absolute';
-            this.element.style.left = (upEvent.clientX - this.offsetX - workspaceRect.left) + 'px';
-            this.element.style.top = (upEvent.clientY - this.offsetY - workspaceRect.top) + 'px';
+            const x = upEvent.clientX - this.offsetX - workspaceRect.left;
+            const y = upEvent.clientY - this.offsetY - workspaceRect.top;
+
+            this.element.style.position = 'absolute';
+            this.element.style.left = x + 'px';
+            this.element.style.top = y + 'px';
             
             this.element.style.zIndex = '';
             this.element.style.opacity = '';
@@ -125,8 +250,18 @@ class Block {
             if (!workspace.contains(this.element)) {
                 workspace.appendChild(this.element);
             }
+
+            const workspaceBlockId = this.element.dataset.workspaceBlockId;
+            if (workspaceBlockId) {
+                updateWorkspaceBlockPosition(workspaceBlockId, x, y);
+            }
         }
         else {
+            const workspaceBlockId = this.element.dataset.workspaceBlockId;
+            if (workspaceBlockId) {
+                removeWorkspaceBlock(workspaceBlockId);
+            }
+
             this.destroy();
             this.element.remove();
             console.log('deleted');
@@ -144,13 +279,32 @@ class Block {
 
         if (isOverWorkspace) {
             const newBlock = this.element.cloneNode(true) as HTMLElement;
+            const x = upEvent.clientX - this.offsetX - workspaceRect.left;
+            const y = upEvent.clientY - this.offsetY - workspaceRect.top;
+
             newBlock.style.margin = '0';
             newBlock.style.position = 'absolute';
-            newBlock.style.left = (upEvent.clientX - this.offsetX - workspaceRect.left) + 'px';
-            newBlock.style.top = (upEvent.clientY - this.offsetY - workspaceRect.top) + 'px';
+            newBlock.style.left = x + 'px';
+            newBlock.style.top = y + 'px';
+
+            const workspaceBlockId = createWorkspaceBlockId();
+            newBlock.dataset.workspaceBlockId = workspaceBlockId;
 
             workspace.appendChild(newBlock);
             new Block(newBlock, false);
+
+            const blockKind = newBlock.dataset.blockKind as BlockKind | undefined;
+            const payloadRaw = newBlock.dataset.blockPayload;
+
+            if (blockKind && payloadRaw) {
+                addWorkspaceBlock({
+                    id: workspaceBlockId,
+                    kind: blockKind,
+                    payload: JSON.parse(payloadRaw) as Readonly<Record<string, unknown>>,
+                    x,
+                    y
+                });
+            }
         }
     }
 
@@ -174,11 +328,13 @@ function createCategory() {
     return container;
 }
 
-function createBlockTemplate(blockData: string, blockColor: string) {
+function createBlockTemplate(blockData: BlockTemplateData, blockColor: string) {
     const container = document.createElement('div');
     container.className = 'block';
     container.style.backgroundColor = blockColor;
-    container.textContent = blockData;
+    container.textContent = blockData.label;
+    container.dataset.blockKind = blockData.kind;
+    container.dataset.blockPayload = JSON.stringify(blockData.defaultPayload);
 
     new Block(container, true);
 
@@ -214,4 +370,7 @@ function createBlockLibrary() { //from array of categories //temp
     }
 }
 
-document.addEventListener('DOMContentLoaded', createBlockLibrary);
+document.addEventListener('DOMContentLoaded', () => {
+    createBlockLibrary();
+    setupAdapterUI();
+});
