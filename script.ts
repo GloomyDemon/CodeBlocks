@@ -176,93 +176,150 @@ function buildInterpreterProgramDraft(): InterpreterProgramDraft {
     };
 }
 
-function runDraftProgram(program: InterpreterProgramDraft): DraftRunResult {
-    const memory: RuntimeMemory = {};
-    const executedBlockIds: number[] = [];
-    const warnings: string[] = [];
-    const diagnostics: DraftDiagnostic[] = [];
+type BridgeExecutionContext = {
+    memory: RuntimeMemory;
+    executedBlockIds: number[];
+    warnings: string[];
+    diagnostics: DraftDiagnostic[];
+    halted: boolean;
+};
 
-    const addDiagnostic = (
-        block: InterpreterBlockDraft,
-        severity: DiagnosticSeverity,
-        message: string
-    ): void => {
-        diagnostics.push({
-            blockId: block.id,
-            workspaceBlockId: block.workspaceBlockId,
-            severity,
-            message
-        });
-    };
+type BridgeBlockMeta = Pick<InterpreterBlockDraft, 'id' | 'workspaceBlockId' | 'kind' | 'payload'>;
 
-    for (const block of program.blocks) {
-        executedBlockIds.push(block.id);
+interface BridgeExecutable {
+    execute(context: BridgeExecutionContext): void;
+}
 
+function addBridgeDiagnostic(
+    context: BridgeExecutionContext,
+    block: BridgeBlockMeta,
+    severity: DiagnosticSeverity,
+    message: string
+): void {
+    context.warnings.push(message);
+    context.diagnostics.push({
+        blockId: block.id,
+        workspaceBlockId: block.workspaceBlockId,
+        severity,
+        message
+    });
+
+    if (severity === 'error') {
+        context.halted = true;
+    }
+}
+
+class BridgeVarDeclExecutable implements BridgeExecutable {
+    constructor(private readonly block: BridgeBlockMeta) {}
+
+    execute(context: BridgeExecutionContext): void {
+        const name = typeof this.block.payload.name === 'string' ? this.block.payload.name : '';
+        const valueType = this.block.payload.valueType;
+
+        if (!name) {
+            addBridgeDiagnostic(context, this.block, 'error', `Block #${this.block.id}: variable name is empty.`);
+            return;
+        }
+
+        if (valueType !== 'number') {
+            addBridgeDiagnostic(
+                context,
+                this.block,
+                'warning',
+                `Block #${this.block.id}: unsupported valueType \"${String(valueType)}\". Only number is supported in draft runtime.`
+            );
+        }
+
+        if (Object.prototype.hasOwnProperty.call(context.memory, name)) {
+            addBridgeDiagnostic(
+                context,
+                this.block,
+                'warning',
+                `Block #${this.block.id}: variable \"${name}\" redeclared. Previous value will be overwritten to 0.`
+            );
+        }
+
+        context.memory[name] = 0;
+    }
+}
+
+class BridgeAssignExecutable implements BridgeExecutable {
+    constructor(private readonly block: BridgeBlockMeta) {}
+
+    execute(context: BridgeExecutionContext): void {
+        const name = typeof this.block.payload.name === 'string' ? this.block.payload.name : '';
+        const value = typeof this.block.payload.value === 'number' ? this.block.payload.value : Number.NaN;
+
+        if (!name) {
+            addBridgeDiagnostic(context, this.block, 'error', `Block #${this.block.id}: assignment target name is empty.`);
+            return;
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(context.memory, name)) {
+            addBridgeDiagnostic(context, this.block, 'error', `Block #${this.block.id}: variable \"${name}\" is not declared. Assignment skipped.`);
+            return;
+        }
+
+        if (Number.isNaN(value)) {
+            addBridgeDiagnostic(context, this.block, 'error', `Block #${this.block.id}: assignment value is not a valid number.`);
+            return;
+        }
+
+        context.memory[name] = value;
+    }
+}
+
+class BridgeIfExecutable implements BridgeExecutable {
+    constructor(private readonly block: BridgeBlockMeta) {}
+
+    execute(context: BridgeExecutionContext): void {
+        addBridgeDiagnostic(context, this.block, 'warning', `Block #${this.block.id}: if execution is not implemented yet in draft runtime.`);
+    }
+}
+
+function buildBridgeProgram(program: InterpreterProgramDraft): BridgeExecutable[] {
+    return program.blocks.map((block) => {
         if (block.kind === 'varDecl') {
-            const name = typeof block.payload.name === 'string' ? block.payload.name : '';
-            const valueType = block.payload.valueType;
-
-            if (!name) {
-                const message = `Block #${block.id}: variable name is empty.`;
-                warnings.push(message);
-                addDiagnostic(block, 'error', message);
-                break;
-            }
-
-            if (valueType !== 'number') {
-                const message = `Block #${block.id}: unsupported valueType \"${String(valueType)}\". Only number is supported in draft runtime.`;
-                warnings.push(message);
-                addDiagnostic(block, 'warning', message);
-            }
-
-            if (Object.prototype.hasOwnProperty.call(memory, name)) {
-                const message = `Block #${block.id}: variable \"${name}\" redeclared. Previous value will be overwritten to 0.`;
-                warnings.push(message);
-                addDiagnostic(block, 'warning', message);
-            }
-
-            memory[name] = 0;
-            continue;
+            return new BridgeVarDeclExecutable(block);
         }
 
         if (block.kind === 'assign') {
-            const name = typeof block.payload.name === 'string' ? block.payload.name : '';
-            const value = typeof block.payload.value === 'number' ? block.payload.value : Number.NaN;
-
-            if (!name) {
-                const message = `Block #${block.id}: assignment target name is empty.`;
-                warnings.push(message);
-                addDiagnostic(block, 'error', message);
-                break;
-            }
-
-            if (!Object.prototype.hasOwnProperty.call(memory, name)) {
-                const message = `Block #${block.id}: variable \"${name}\" is not declared. Assignment skipped.`;
-                warnings.push(message);
-                addDiagnostic(block, 'error', message);
-                break;
-            }
-
-            if (Number.isNaN(value)) {
-                const message = `Block #${block.id}: assignment value is not a valid number.`;
-                warnings.push(message);
-                addDiagnostic(block, 'error', message);
-                break;
-            }
-
-            memory[name] = value;
-            continue;
+            return new BridgeAssignExecutable(block);
         }
 
-        if (block.kind === 'if') {
-            const message = `Block #${block.id}: if execution is not implemented yet in draft runtime.`;
-            warnings.push(message);
-            addDiagnostic(block, 'warning', message);
-            continue;
+        return new BridgeIfExecutable(block);
+    });
+}
+
+function runDraftProgram(program: InterpreterProgramDraft): DraftRunResult {
+    const context: BridgeExecutionContext = {
+        memory: {},
+        executedBlockIds: [],
+        warnings: [],
+        diagnostics: [],
+        halted: false
+    };
+
+    const bridgeProgram = buildBridgeProgram(program);
+
+    for (let index = 0; index < bridgeProgram.length; index++) {
+        const executable = bridgeProgram[index];
+        const sourceBlock = program.blocks[index];
+
+        if (context.halted || !sourceBlock) {
+            break;
         }
+
+        context.executedBlockIds.push(sourceBlock.id);
+        executable.execute(context);
     }
 
-    return { memory, executedBlockIds, warnings, diagnostics };
+    return {
+        memory: context.memory,
+        executedBlockIds: context.executedBlockIds,
+        warnings: context.warnings,
+        diagnostics: context.diagnostics
+    };
 }
 
 function clearDiagnosticHighlights(): void {
@@ -321,28 +378,39 @@ function setupAdapterUI(): void {
 }
 
 class Block {
+    private static allPermanentBlocks: Block[] = [];
+
     private element: HTMLElement;
-    private isTemplate: boolean; 
+    private isTemplate: boolean;
     private clone: HTMLElement | null = null;
+
+    private parent: Block | null = null;
+    private child: Block | null = null;
+    private relativeX: number = 0;
+    private relativeY: number = 0;
+
     private offsetX: number = 0;
     private offsetY: number = 0;
+    private dragStartX: number = 0;
+    private dragStartY: number = 0;
+    private chainBlocks: Block[] = [];
+    private chainStartPositions: { left: number; top: number }[] = [];
 
     constructor(element: HTMLElement, isTemplate: boolean = false) {
         this.element = element;
         this.isTemplate = isTemplate;
-        
-        this.element.addEventListener('mousedown', this.handleMouseDown);
 
-        if (!this.isTemplate) {
+        (element as HTMLElement & { __blockInstance?: Block }).__blockInstance = this;
+
+        if (!isTemplate) {
+            Block.allPermanentBlocks.push(this);
             this.element.addEventListener('dblclick', this.handleDoubleClick);
         }
+
+        this.element.addEventListener('mousedown', this.handleMouseDown);
     }
 
     private handleDoubleClick = (): void => {
-        if (this.isTemplate) {
-            return;
-        }
-
         const workspaceBlockId = this.element.dataset.workspaceBlockId;
         const blockKind = this.element.dataset.blockKind as BlockKind | undefined;
         const payloadRaw = this.element.dataset.blockPayload;
@@ -357,7 +425,6 @@ class Block {
         if (blockKind === 'varDecl') {
             const currentName = typeof currentPayload.name === 'string' ? currentPayload.name : 'x';
             const inputName = prompt('Variable name:', currentName);
-
             if (inputName === null) {
                 return;
             }
@@ -382,17 +449,15 @@ class Block {
                 return;
             }
 
-            const parsedValue = Number(inputValue);
             nextPayload = {
                 name: inputName.trim(),
-                value: parsedValue
+                value: Number(inputValue)
             };
         }
 
         if (blockKind === 'if') {
             const currentCondition = typeof currentPayload.condition === 'string' ? currentPayload.condition : '';
             const inputCondition = prompt('If condition (draft text):', currentCondition);
-
             if (inputCondition === null) {
                 return;
             }
@@ -409,7 +474,7 @@ class Block {
         this.element.dataset.blockPayload = JSON.stringify(nextPayload);
         updateWorkspaceBlockPayload(workspaceBlockId, nextPayload);
         this.element.textContent = getBlockCaption(blockKind, nextPayload, this.element.textContent ?? blockKind);
-    }
+    };
 
     private handleMouseDown = (downEvent: MouseEvent): void => {
         if (!this.isTemplate && downEvent.detail > 1) {
@@ -421,47 +486,59 @@ class Block {
         const rect = this.element.getBoundingClientRect();
         this.offsetX = downEvent.clientX - rect.left;
         this.offsetY = downEvent.clientY - rect.top;
+        this.dragStartX = downEvent.clientX;
+        this.dragStartY = downEvent.clientY;
 
         if (this.isTemplate) {
             this.clone = this.element.cloneNode(true) as HTMLElement;
             this.clone.classList.add('block-draggable-clone');
             this.clone.style.position = 'fixed';
-            this.clone.style.opacity = '0.8';
-            this.clone.style.pointerEvents = 'none';
-            this.clone.style.zIndex = '1000';
-            this.clone.style.margin = '0';
             this.clone.style.left = (downEvent.clientX - this.offsetX) + 'px';
             this.clone.style.top = (downEvent.clientY - this.offsetY) + 'px';
-            
             document.body.appendChild(this.clone);
-        }
-        else {            
-            this.element.style.position = 'fixed';
-            this.element.style.left = (downEvent.clientX - this.offsetX) + 'px';
-            this.element.style.top = (downEvent.clientY - this.offsetY) + 'px';
-            this.element.style.zIndex = '1000';
-            this.element.style.opacity = '0.8';
-            this.element.style.pointerEvents = 'none';
+        } else {
+            if (this.parent) {
+                this.detachBlockFromParent();
+            }
+
+            this.chainBlocks = this.getChain();
+            this.chainStartPositions = this.chainBlocks.map((block) => {
+                const bounds = block.element.getBoundingClientRect();
+                return { left: bounds.left, top: bounds.top };
+            });
+
+            this.chainBlocks.forEach((block, index) => {
+                block.element.style.position = 'fixed';
+                block.element.style.left = this.chainStartPositions[index].left + 'px';
+                block.element.style.top = this.chainStartPositions[index].top + 'px';
+                block.element.style.zIndex = '1000';
+            });
         }
 
         document.addEventListener('mousemove', this.handleMouseMove);
         document.addEventListener('mouseup', this.handleMouseUp);
-    }
+    };
 
     private handleMouseMove = (moveEvent: MouseEvent): void => {
         moveEvent.preventDefault();
-        
+
         if (this.isTemplate) {
             if (this.clone) {
                 this.clone.style.left = (moveEvent.clientX - this.offsetX) + 'px';
                 this.clone.style.top = (moveEvent.clientY - this.offsetY) + 'px';
             }
-        } 
-        else {
-            this.element.style.left = (moveEvent.clientX - this.offsetX) + 'px';
-            this.element.style.top = (moveEvent.clientY - this.offsetY) + 'px';
+            return;
         }
-    }
+
+        const deltaX = moveEvent.clientX - this.dragStartX;
+        const deltaY = moveEvent.clientY - this.dragStartY;
+
+        this.chainBlocks.forEach((block, index) => {
+            const position = this.chainStartPositions[index];
+            block.element.style.left = (position.left + deltaX) + 'px';
+            block.element.style.top = (position.top + deltaY) + 'px';
+        });
+    };
 
     private handleMouseUp = (upEvent: MouseEvent): void => {
         document.removeEventListener('mousemove', this.handleMouseMove);
@@ -469,118 +546,271 @@ class Block {
 
         if (this.isTemplate) {
             if (this.clone) {
-                this.handleTemplateDrop(upEvent);
+                this.handleCloneDrop(upEvent);
                 this.clone.remove();
                 this.clone = null;
             }
-        } 
-        else {
-            this.element.style.opacity = '1';
-
-            this.handlePermanentDrop(upEvent);
+            return;
         }
-    }
-    
+
+        this.chainBlocks.forEach((block) => {
+            block.element.style.zIndex = '';
+        });
+        this.handlePermanentDrop(upEvent);
+    };
+
     private handlePermanentDrop = (upEvent: MouseEvent): void => {
         const workspace = document.querySelector('.workspace');
-        if (!workspace) return;
+        if (!(workspace instanceof HTMLElement)) {
+            return;
+        }
 
         const workspaceRect = workspace.getBoundingClientRect();
-        const isOverWorkspace = 
+        const isOverWorkspace =
             upEvent.clientX >= workspaceRect.left && upEvent.clientX <= workspaceRect.right &&
             upEvent.clientY >= workspaceRect.top && upEvent.clientY <= workspaceRect.bottom;
 
-        //will add other checks
-
-        if (isOverWorkspace) {
-            const x = upEvent.clientX - this.offsetX - workspaceRect.left;
-            const y = upEvent.clientY - this.offsetY - workspaceRect.top;
-
-            this.element.style.position = 'absolute';
-            this.element.style.left = x + 'px';
-            this.element.style.top = y + 'px';
-            
-            this.element.style.zIndex = '';
-            this.element.style.opacity = '';
-            this.element.style.pointerEvents = 'auto';
-
-            if (!workspace.contains(this.element)) {
-                workspace.appendChild(this.element);
-            }
-
-            const workspaceBlockId = this.element.dataset.workspaceBlockId;
-            if (workspaceBlockId) {
-                updateWorkspaceBlockPosition(workspaceBlockId, x, y);
-            }
+        if (!isOverWorkspace) {
+            this.removeBlockChain();
+            return;
         }
-        else {
-            const workspaceBlockId = this.element.dataset.workspaceBlockId;
-            if (workspaceBlockId) {
-                removeWorkspaceBlock(workspaceBlockId);
+
+        this.chainBlocks.forEach((block) => {
+            block.element.style.visibility = 'hidden';
+        });
+        const elementUnderCursor = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
+        this.chainBlocks.forEach((block) => {
+            block.element.style.visibility = '';
+        });
+
+        let targetElement = elementUnderCursor as HTMLElement | null;
+        while (targetElement && !targetElement.classList.contains('block')) {
+            targetElement = targetElement.parentElement;
+        }
+
+        const targetBlock = targetElement
+            ? (targetElement as HTMLElement & { __blockInstance?: Block }).__blockInstance
+            : undefined;
+
+        if (targetBlock && this.chainBlocks.indexOf(targetBlock) === -1) {
+            this.chainBlocks.forEach((block) => {
+                const rect = block.element.getBoundingClientRect();
+                block.element.style.position = 'absolute';
+                block.element.style.left = (rect.left - workspaceRect.left) + 'px';
+                block.element.style.top = (rect.top - workspaceRect.top) + 'px';
+            });
+
+            const targetRect = targetBlock.element.getBoundingClientRect();
+            const offsetX = 0;
+            const offsetY = targetRect.height + 5;
+
+            this.attachBlockToParent(targetBlock, offsetX, offsetY);
+
+            const newLeft = (targetRect.left - workspaceRect.left) + offsetX;
+            const newTop = (targetRect.top - workspaceRect.top) + offsetY;
+            this.updatePosition(newLeft, newTop);
+
+            this.chainBlocks.forEach((block) => {
+                if (!workspace.contains(block.element)) {
+                    workspace.appendChild(block.element);
+                }
+
+                const workspaceBlockId = block.element.dataset.workspaceBlockId;
+                if (workspaceBlockId) {
+                    const rect = block.element.getBoundingClientRect();
+                    updateWorkspaceBlockPosition(workspaceBlockId, rect.left - workspaceRect.left, rect.top - workspaceRect.top);
+                }
+            });
+            return;
+        }
+
+        this.chainBlocks.forEach((block) => {
+            const rect = block.element.getBoundingClientRect();
+            const left = rect.left - workspaceRect.left;
+            const top = rect.top - workspaceRect.top;
+
+            block.element.style.position = 'absolute';
+            block.element.style.left = left + 'px';
+            block.element.style.top = top + 'px';
+
+            if (!workspace.contains(block.element)) {
+                workspace.appendChild(block.element);
             }
 
-            this.destroy();
-            this.element.remove();
-            console.log('deleted');
-        }
-    }
+            const workspaceBlockId = block.element.dataset.workspaceBlockId;
+            if (workspaceBlockId) {
+                updateWorkspaceBlockPosition(workspaceBlockId, left, top);
+            }
+        });
+    };
 
-    private handleTemplateDrop = (upEvent: MouseEvent): void => {
-        const workspace = document.querySelector('.workspace') as HTMLElement | null;
-        if (!workspace) return;
+    private handleCloneDrop = (upEvent: MouseEvent): void => {
+        const workspace = document.querySelector('.workspace');
+        if (!(workspace instanceof HTMLElement)) {
+            return;
+        }
 
         const workspaceRect = workspace.getBoundingClientRect();
-        const isOverWorkspace = 
+        const isOverWorkspace =
             upEvent.clientX >= workspaceRect.left && upEvent.clientX <= workspaceRect.right &&
             upEvent.clientY >= workspaceRect.top && upEvent.clientY <= workspaceRect.bottom;
 
-        if (isOverWorkspace) {
-            const newBlock = this.element.cloneNode(true) as HTMLElement;
-            const x = upEvent.clientX - this.offsetX - workspaceRect.left;
-            const y = upEvent.clientY - this.offsetY - workspaceRect.top;
+        if (!isOverWorkspace) {
+            return;
+        }
 
-            newBlock.style.margin = '0';
-            newBlock.style.position = 'absolute';
-            newBlock.style.left = x + 'px';
-            newBlock.style.top = y + 'px';
+        if (this.clone) {
+            this.clone.style.visibility = 'hidden';
+        }
+        const elementUnderCursor = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
+        if (this.clone) {
+            this.clone.style.visibility = '';
+        }
 
-            const workspaceBlockId = createWorkspaceBlockId();
-            newBlock.dataset.workspaceBlockId = workspaceBlockId;
+        let targetElement = elementUnderCursor as HTMLElement | null;
+        while (targetElement && !targetElement.classList.contains('block')) {
+            targetElement = targetElement.parentElement;
+        }
 
-            workspace.appendChild(newBlock);
-            new Block(newBlock, false);
+        const newBlockElement = this.element.cloneNode(true) as HTMLElement;
+        newBlockElement.style.margin = '0';
+        newBlockElement.style.position = 'absolute';
 
-            const blockKind = newBlock.dataset.blockKind as BlockKind | undefined;
-            const payloadRaw = newBlock.dataset.blockPayload;
+        const workspaceBlockId = createWorkspaceBlockId();
+        newBlockElement.dataset.workspaceBlockId = workspaceBlockId;
 
-            if (blockKind && payloadRaw) {
-                const parsedPayload = JSON.parse(payloadRaw) as Readonly<Record<string, unknown>>;
+        workspace.appendChild(newBlockElement);
+        const newBlock = new Block(newBlockElement, false);
+
+        const blockKind = newBlockElement.dataset.blockKind as BlockKind | undefined;
+        const payloadRaw = newBlockElement.dataset.blockPayload;
+        if (!blockKind || !payloadRaw) {
+            return;
+        }
+
+        const parsedPayload = JSON.parse(payloadRaw) as Readonly<Record<string, unknown>>;
+
+        if (targetElement) {
+            const targetBlock = (targetElement as HTMLElement & { __blockInstance?: Block }).__blockInstance;
+            if (targetBlock) {
+                const targetRect = targetBlock.element.getBoundingClientRect();
+                const offsetX = 0;
+                const offsetY = targetRect.height + 5;
+
+                newBlock.attachBlockToParent(targetBlock, offsetX, offsetY);
+
+                const newLeft = (targetRect.left - workspaceRect.left) + offsetX;
+                const newTop = (targetRect.top - workspaceRect.top) + offsetY;
+
+                newBlock.element.style.left = newLeft + 'px';
+                newBlock.element.style.top = newTop + 'px';
+                newBlock.element.textContent = getBlockCaption(blockKind, parsedPayload, newBlock.element.textContent ?? blockKind);
 
                 addWorkspaceBlock({
                     id: workspaceBlockId,
                     kind: blockKind,
                     payload: parsedPayload,
-                    x,
-                    y
+                    x: newLeft,
+                    y: newTop
                 });
-
-                newBlock.textContent = getBlockCaption(blockKind, parsedPayload, newBlock.textContent ?? blockKind);
+                return;
             }
         }
-    }
 
-    private destroy = (): void =>{
+        const x = upEvent.clientX - this.offsetX - workspaceRect.left;
+        const y = upEvent.clientY - this.offsetY - workspaceRect.top;
+
+        newBlockElement.style.left = x + 'px';
+        newBlockElement.style.top = y + 'px';
+        newBlockElement.textContent = getBlockCaption(blockKind, parsedPayload, newBlockElement.textContent ?? blockKind);
+
+        addWorkspaceBlock({
+            id: workspaceBlockId,
+            kind: blockKind,
+            payload: parsedPayload,
+            x,
+            y
+        });
+    };
+
+    private detachBlockFromParent = (): void => {
+        if (this.parent) {
+            this.parent.child = null;
+            this.parent = null;
+        }
+    };
+
+    private attachBlockToParent = (parentBlock: Block, offsetX: number, offsetY: number): void => {
+        if (this.parent) {
+            this.detachBlockFromParent();
+        }
+        if (parentBlock.child) {
+            parentBlock.child.detachBlockFromParent();
+        }
+
+        this.relativeX = offsetX;
+        this.relativeY = offsetY;
+        this.parent = parentBlock;
+        parentBlock.child = this;
+    };
+
+    private getChain = (): Block[] => {
+        const chain: Block[] = [];
+        let current: Block | null = this;
+        while (current) {
+            chain.push(current);
+            current = current.child;
+        }
+        return chain;
+    };
+
+    private updatePosition = (left: number, top: number): void => {
+        this.element.style.left = left + 'px';
+        this.element.style.top = top + 'px';
+
+        if (this.child) {
+            this.child.updatePosition(left + this.relativeX, top + this.relativeY);
+        }
+    };
+
+    private removeBlockChain = (): void => {
+        if (this.child) {
+            this.child.removeBlockChain();
+        }
+
+        const workspaceBlockId = this.element.dataset.workspaceBlockId;
+        if (workspaceBlockId) {
+            removeWorkspaceBlock(workspaceBlockId);
+        }
+
+        this.destroy();
+        this.element.remove();
+    };
+
+    private destroy = (): void => {
+        delete (this.element as HTMLElement & { __blockInstance?: Block }).__blockInstance;
+
+        const index = Block.allPermanentBlocks.indexOf(this);
+        if (index !== -1) {
+            Block.allPermanentBlocks.splice(index, 1);
+        }
+
+        this.detachBlockFromParent();
+        if (this.child) {
+            this.child.detachBlockFromParent();
+        }
+
         this.element.removeEventListener('mousedown', this.handleMouseDown);
         this.element.removeEventListener('dblclick', this.handleDoubleClick);
         document.removeEventListener('mousemove', this.handleMouseMove);
         document.removeEventListener('mouseup', this.handleMouseUp);
-        
+
         if (this.clone && this.clone.parentNode) {
             this.clone.remove();
         }
-        
+
         this.element.classList.remove('block-draggable-clone');
-    }
+    };
 }
 
 function createCategory() {
