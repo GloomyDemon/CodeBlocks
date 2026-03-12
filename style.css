@@ -28,12 +28,28 @@ body {
     margin-bottom: 8px;
 }
 
+#run-program-btn {
+    margin-bottom: 8px;
+    margin-left: 6px;
+}
+
 #adapter-output {
     margin-top: 10px;
     padding: 8px;
     border-radius: 5px;
     background-color: #1f1f1f;
     color: #d4d4d4;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+#run-output {
+    margin-top: 10px;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: #0f172a;
+    color: #c7f9cc;
     font-size: 12px;
     white-space: pre-wrap;
     word-break: break-word;
@@ -81,4 +97,12 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     transition: none;
     width: max-content;
+}
+
+.block-warning {
+    outline: 2px solid #f59e0b;
+}
+
+.block-error {
+    outline: 2px solid #ef4444;
 }

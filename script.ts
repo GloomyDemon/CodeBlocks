@@ -16,6 +16,7 @@ type WorkspaceBlockData = {
 
 type InterpreterBlockDraft = {
     id: number;
+    workspaceBlockId: string;
     kind: BlockKind;
     payload: Readonly<Record<string, unknown>>;
     x: number;
@@ -24,6 +25,24 @@ type InterpreterBlockDraft = {
 
 type InterpreterProgramDraft = {
     blocks: InterpreterBlockDraft[];
+};
+
+type RuntimeMemory = Record<string, number>;
+
+type DraftRunResult = {
+    memory: RuntimeMemory;
+    executedBlockIds: number[];
+    warnings: string[];
+    diagnostics: DraftDiagnostic[];
+};
+
+type DiagnosticSeverity = 'warning' | 'error';
+
+type DraftDiagnostic = {
+    blockId: number;
+    workspaceBlockId: string;
+    severity: DiagnosticSeverity;
+    message: string;
 };
 
 type CategoryData = { //temp
@@ -122,6 +141,7 @@ function buildInterpreterProgramDraft(): InterpreterProgramDraft {
     return {
         blocks: orderedBlocks.map((block) => ({
             id: getNumericIdFromWorkspaceId(block.id),
+            workspaceBlockId: block.id,
             kind: block.kind,
             payload: normalizePayload(block.kind, block.payload),
             x: block.x,
@@ -130,17 +150,147 @@ function buildInterpreterProgramDraft(): InterpreterProgramDraft {
     };
 }
 
+function runDraftProgram(program: InterpreterProgramDraft): DraftRunResult {
+    const memory: RuntimeMemory = {};
+    const executedBlockIds: number[] = [];
+    const warnings: string[] = [];
+    const diagnostics: DraftDiagnostic[] = [];
+
+    const addDiagnostic = (
+        block: InterpreterBlockDraft,
+        severity: DiagnosticSeverity,
+        message: string
+    ): void => {
+        diagnostics.push({
+            blockId: block.id,
+            workspaceBlockId: block.workspaceBlockId,
+            severity,
+            message
+        });
+    };
+
+    for (const block of program.blocks) {
+        executedBlockIds.push(block.id);
+
+        if (block.kind === 'varDecl') {
+            const name = typeof block.payload.name === 'string' ? block.payload.name : '';
+            const valueType = block.payload.valueType;
+
+            if (!name) {
+                const message = `Block #${block.id}: variable name is empty.`;
+                warnings.push(message);
+                addDiagnostic(block, 'error', message);
+                continue;
+            }
+
+            if (valueType !== 'number') {
+                const message = `Block #${block.id}: unsupported valueType \"${String(valueType)}\". Only number is supported in draft runtime.`;
+                warnings.push(message);
+                addDiagnostic(block, 'warning', message);
+            }
+
+            if (Object.prototype.hasOwnProperty.call(memory, name)) {
+                const message = `Block #${block.id}: variable \"${name}\" redeclared. Previous value will be overwritten to 0.`;
+                warnings.push(message);
+                addDiagnostic(block, 'warning', message);
+            }
+
+            memory[name] = 0;
+            continue;
+        }
+
+        if (block.kind === 'assign') {
+            const name = typeof block.payload.name === 'string' ? block.payload.name : '';
+            const value = typeof block.payload.value === 'number' ? block.payload.value : Number.NaN;
+
+            if (!name) {
+                const message = `Block #${block.id}: assignment target name is empty.`;
+                warnings.push(message);
+                addDiagnostic(block, 'error', message);
+                continue;
+            }
+
+            if (!Object.prototype.hasOwnProperty.call(memory, name)) {
+                const message = `Block #${block.id}: variable \"${name}\" is not declared. Assignment skipped.`;
+                warnings.push(message);
+                addDiagnostic(block, 'error', message);
+                continue;
+            }
+
+            if (Number.isNaN(value)) {
+                const message = `Block #${block.id}: assignment value is not a valid number.`;
+                warnings.push(message);
+                addDiagnostic(block, 'error', message);
+                continue;
+            }
+
+            memory[name] = value;
+            continue;
+        }
+
+        if (block.kind === 'if') {
+            const message = `Block #${block.id}: if execution is not implemented yet in draft runtime.`;
+            warnings.push(message);
+            addDiagnostic(block, 'warning', message);
+            continue;
+        }
+    }
+
+    return { memory, executedBlockIds, warnings, diagnostics };
+}
+
+function clearDiagnosticHighlights(): void {
+    const highlighted = document.querySelectorAll('.workspace .block-warning, .workspace .block-error');
+    highlighted.forEach((element) => {
+        element.classList.remove('block-warning');
+        element.classList.remove('block-error');
+    });
+}
+
+function applyDiagnosticHighlights(diagnostics: DraftDiagnostic[]): void {
+    for (const diagnostic of diagnostics) {
+        const selector = `.workspace .block[data-workspace-block-id=\"${diagnostic.workspaceBlockId}\"]`;
+        const blockElement = document.querySelector(selector);
+
+        if (!(blockElement instanceof HTMLElement)) {
+            continue;
+        }
+
+        if (diagnostic.severity === 'error') {
+            blockElement.classList.add('block-error');
+            continue;
+        }
+
+        blockElement.classList.add('block-warning');
+    }
+}
+
 function setupAdapterUI(): void {
     const runAdapterButton = document.querySelector('#run-adapter-btn');
+    const runProgramButton = document.querySelector('#run-program-btn');
     const adapterOutput = document.querySelector('#adapter-output');
+    const runOutput = document.querySelector('#run-output');
 
-    if (!(runAdapterButton instanceof HTMLButtonElement) || !(adapterOutput instanceof HTMLElement)) {
+    if (!(runAdapterButton instanceof HTMLButtonElement)
+        || !(runProgramButton instanceof HTMLButtonElement)
+        || !(adapterOutput instanceof HTMLElement)
+        || !(runOutput instanceof HTMLElement)) {
         return;
     }
 
     runAdapterButton.addEventListener('click', () => {
         const programDraft = buildInterpreterProgramDraft();
         adapterOutput.textContent = JSON.stringify(programDraft, null, 2);
+    });
+
+    runProgramButton.addEventListener('click', () => {
+        clearDiagnosticHighlights();
+
+        const programDraft = buildInterpreterProgramDraft();
+        const result = runDraftProgram(programDraft);
+        applyDiagnosticHighlights(result.diagnostics);
+
+        runOutput.textContent = JSON.stringify(result, null, 2);
     });
 }
 
