@@ -85,6 +85,13 @@ function addWorkspaceBlock(data: WorkspaceBlockData): void {
     workspaceBlocks.push(data);
 }
 
+function updateWorkspaceBlockPayload(id: string, payload: Readonly<Record<string, unknown>>): void {
+    const block = workspaceBlocks.find(item => item.id === id);
+    if (block) {
+        block.payload = payload;
+    }
+}
+
 function removeWorkspaceBlock(id: string): void {
     const index = workspaceBlocks.findIndex(block => block.id === id);
     if (index >= 0) {
@@ -128,6 +135,25 @@ function normalizePayload(kind: BlockKind, payload: Readonly<Record<string, unkn
     return {
         condition: source.condition ?? null
     };
+}
+
+function getBlockCaption(kind: BlockKind, payload: Readonly<Record<string, unknown>>, fallback: string): string {
+    if (kind === 'varDecl') {
+        const name = typeof payload.name === 'string' ? payload.name : 'x';
+        return `var ${name}`;
+    }
+
+    if (kind === 'assign') {
+        const name = typeof payload.name === 'string' ? payload.name : 'x';
+        const value = typeof payload.value === 'number' ? payload.value : 0;
+        return `${name} = ${value}`;
+    }
+
+    if (kind === 'if') {
+        return 'if (...)';
+    }
+
+    return fallback;
 }
 
 function buildInterpreterProgramDraft(): InterpreterProgramDraft {
@@ -180,7 +206,7 @@ function runDraftProgram(program: InterpreterProgramDraft): DraftRunResult {
                 const message = `Block #${block.id}: variable name is empty.`;
                 warnings.push(message);
                 addDiagnostic(block, 'error', message);
-                continue;
+                break;
             }
 
             if (valueType !== 'number') {
@@ -207,21 +233,21 @@ function runDraftProgram(program: InterpreterProgramDraft): DraftRunResult {
                 const message = `Block #${block.id}: assignment target name is empty.`;
                 warnings.push(message);
                 addDiagnostic(block, 'error', message);
-                continue;
+                break;
             }
 
             if (!Object.prototype.hasOwnProperty.call(memory, name)) {
                 const message = `Block #${block.id}: variable \"${name}\" is not declared. Assignment skipped.`;
                 warnings.push(message);
                 addDiagnostic(block, 'error', message);
-                continue;
+                break;
             }
 
             if (Number.isNaN(value)) {
                 const message = `Block #${block.id}: assignment value is not a valid number.`;
                 warnings.push(message);
                 addDiagnostic(block, 'error', message);
-                continue;
+                break;
             }
 
             memory[name] = value;
@@ -306,9 +332,90 @@ class Block {
         this.isTemplate = isTemplate;
         
         this.element.addEventListener('mousedown', this.handleMouseDown);
+
+        if (!this.isTemplate) {
+            this.element.addEventListener('dblclick', this.handleDoubleClick);
+        }
+    }
+
+    private handleDoubleClick = (): void => {
+        if (this.isTemplate) {
+            return;
+        }
+
+        const workspaceBlockId = this.element.dataset.workspaceBlockId;
+        const blockKind = this.element.dataset.blockKind as BlockKind | undefined;
+        const payloadRaw = this.element.dataset.blockPayload;
+
+        if (!workspaceBlockId || !blockKind || !payloadRaw) {
+            return;
+        }
+
+        const currentPayload = JSON.parse(payloadRaw) as Readonly<Record<string, unknown>>;
+        let nextPayload: Readonly<Record<string, unknown>> | null = null;
+
+        if (blockKind === 'varDecl') {
+            const currentName = typeof currentPayload.name === 'string' ? currentPayload.name : 'x';
+            const inputName = prompt('Variable name:', currentName);
+
+            if (inputName === null) {
+                return;
+            }
+
+            nextPayload = {
+                name: inputName.trim(),
+                valueType: 'number'
+            };
+        }
+
+        if (blockKind === 'assign') {
+            const currentName = typeof currentPayload.name === 'string' ? currentPayload.name : 'x';
+            const currentValue = typeof currentPayload.value === 'number' ? currentPayload.value : 0;
+
+            const inputName = prompt('Assignment target variable:', currentName);
+            if (inputName === null) {
+                return;
+            }
+
+            const inputValue = prompt('Assignment value (number):', String(currentValue));
+            if (inputValue === null) {
+                return;
+            }
+
+            const parsedValue = Number(inputValue);
+            nextPayload = {
+                name: inputName.trim(),
+                value: parsedValue
+            };
+        }
+
+        if (blockKind === 'if') {
+            const currentCondition = typeof currentPayload.condition === 'string' ? currentPayload.condition : '';
+            const inputCondition = prompt('If condition (draft text):', currentCondition);
+
+            if (inputCondition === null) {
+                return;
+            }
+
+            nextPayload = {
+                condition: inputCondition
+            };
+        }
+
+        if (!nextPayload) {
+            return;
+        }
+
+        this.element.dataset.blockPayload = JSON.stringify(nextPayload);
+        updateWorkspaceBlockPayload(workspaceBlockId, nextPayload);
+        this.element.textContent = getBlockCaption(blockKind, nextPayload, this.element.textContent ?? blockKind);
     }
 
     private handleMouseDown = (downEvent: MouseEvent): void => {
+        if (!this.isTemplate && downEvent.detail > 1) {
+            return;
+        }
+
         downEvent.preventDefault();
 
         const rect = this.element.getBoundingClientRect();
@@ -447,19 +554,24 @@ class Block {
             const payloadRaw = newBlock.dataset.blockPayload;
 
             if (blockKind && payloadRaw) {
+                const parsedPayload = JSON.parse(payloadRaw) as Readonly<Record<string, unknown>>;
+
                 addWorkspaceBlock({
                     id: workspaceBlockId,
                     kind: blockKind,
-                    payload: JSON.parse(payloadRaw) as Readonly<Record<string, unknown>>,
+                    payload: parsedPayload,
                     x,
                     y
                 });
+
+                newBlock.textContent = getBlockCaption(blockKind, parsedPayload, newBlock.textContent ?? blockKind);
             }
         }
     }
 
     private destroy = (): void =>{
         this.element.removeEventListener('mousedown', this.handleMouseDown);
+        this.element.removeEventListener('dblclick', this.handleDoubleClick);
         document.removeEventListener('mousemove', this.handleMouseMove);
         document.removeEventListener('mouseup', this.handleMouseUp);
         
