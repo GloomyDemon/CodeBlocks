@@ -1,11 +1,11 @@
-import type { IExecutable } from "../../Interfaces/IExecutable.ts";
-import type { IContainer } from "../../Interfaces/IContainer.ts";
-import { Scope } from "../../Program/Scope.ts";
-import { IdGenerator } from "../../Program/IdGenerator.ts";
-import type { IConditional } from "../../Interfaces/IConditional.ts";
-import type { IEvaluable } from "../../Interfaces/IEvaluable.ts";
-import type { Variable } from "../Variable.ts";
-import { Container } from "../../Program/Container.ts";
+import type { IExecutable } from "../../Interfaces/IExecutable.js";
+import type { IContainer } from "../../Interfaces/IContainer.js";
+import { Scope } from "../../Program/Scope.js";
+import { IdGenerator } from "../../Program/IdGenerator.js";
+import type { IConditional } from "../../Interfaces/IConditional.js";
+import type { IEvaluable } from "../../Interfaces/IEvaluable.js";
+import type { Variable } from "../Variable.js";
+import { Container } from "../../Program/Container.js";
 
 export class For implements IExecutable, IContainer, IConditional {
 
@@ -26,6 +26,11 @@ export class For implements IExecutable, IContainer, IConditional {
     #iterators: Container<IExecutable> = new Container<IExecutable>();
     get iterators(): Readonly<Container<IExecutable>> {
         return this.#iterators;
+    }
+
+    #initializers: Container<IExecutable> = new Container<IExecutable>();
+    get initializers(): Readonly<Container<IExecutable>> {
+        return this.#initializers;
     }
 
     readonly #scope: Scope;
@@ -49,6 +54,12 @@ export class For implements IExecutable, IContainer, IConditional {
     }
 
     execute(): void {
+        for (const variable of this.#variables.blocks) {
+            this.#scope.set(variable);
+        }
+
+        this.#initializers.blocks.forEach(block => block.execute());
+
         while (this.check()) {
             this.#blocks.blocks.forEach(block => block.execute());
             this.#iterators.blocks.forEach(iterator => iterator.execute());

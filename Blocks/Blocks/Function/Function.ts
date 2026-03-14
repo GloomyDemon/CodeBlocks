@@ -1,7 +1,7 @@
-﻿import type { IEvaluable } from "../../Interfaces/IEvaluable.ts";
-import { ReturnException } from "../../Program/ReturnException.ts";
-import type { ValueType } from "../../Program/ValueType.ts";
-import { VoidFunction } from "./VoidFunction.ts";
+﻿import type { IEvaluable } from "../../Interfaces/IEvaluable.js";
+import { ReturnException } from "../../Program/ReturnException.js";
+import type { ValueType } from "../../Program/ValueType.js";
+import { VoidFunction } from "./VoidFunction.js";
 
 export class Function<T> extends VoidFunction implements IEvaluable<T> {
 

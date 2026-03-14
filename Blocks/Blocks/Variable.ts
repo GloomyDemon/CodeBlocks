@@ -1,6 +1,6 @@
-﻿import type { IEvaluable } from "../Interfaces/IEvaluable.ts";
-import { IdGenerator } from "../Program/IdGenerator.ts"; 
-import type { ValueType } from "../Program/ValueType.ts";
+﻿import type { IEvaluable } from "../Interfaces/IEvaluable.js";
+import { IdGenerator } from "../Program/IdGenerator.js"; 
+import type { ValueType } from "../Program/ValueType.js";
 
 export class Variable<T> implements IEvaluable<T> {
 

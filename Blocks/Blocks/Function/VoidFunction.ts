@@ -1,13 +1,13 @@
-﻿import type { IExecutable } from "../../Interfaces/IExecutable.ts";
-import type { IContainer } from "../../Interfaces/IContainer.ts";
-import type { INamed } from "../../Interfaces/INamed.ts";
-import type { IEvaluable } from "../../Interfaces/IEvaluable.ts"
-import { Variable } from "../Variable.ts";
-import { Scope } from "../../Program/Scope.ts";
-import { IdGenerator } from "../../Program/IdGenerator.ts"; 
-import { VoidReturnException } from "../../Program/VoidReturnException.ts";
-import { ReturnException } from "../../Program/ReturnException.ts";
-import { Container } from "../../Program/Container.ts";
+﻿import type { IExecutable } from "../../Interfaces/IExecutable.js";
+import type { IContainer } from "../../Interfaces/IContainer.js";
+import type { INamed } from "../../Interfaces/INamed.js";
+import type { IEvaluable } from "../../Interfaces/IEvaluable.js"
+import { Variable } from "../Variable.js";
+import { Scope } from "../../Program/Scope.js";
+import { IdGenerator } from "../../Program/IdGenerator.js"; 
+import { VoidReturnException } from "../../Program/VoidReturnException.js";
+import { ReturnException } from "../../Program/ReturnException.js";
+import { Container } from "../../Program/Container.js";
 
 export class VoidFunction implements IExecutable, IContainer, INamed {
 

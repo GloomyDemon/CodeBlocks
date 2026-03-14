@@ -1,5 +1,5 @@
-import { VoidReturnException } from "./VoidReturnException.ts"
-import type { ValueType } from "./ValueType.ts";
+import { VoidReturnException } from "./VoidReturnException.js"
+import type { ValueType } from "./ValueType.js";
 
 export class ReturnException<T> extends VoidReturnException {
 

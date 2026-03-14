@@ -7,10 +7,14 @@
     "skipLibCheck": true,
     "rootDir": ".",
     "outDir": ".",
-    "sourceMap": true,
+    "sourceMap": false,
     "noEmitOnError": true,
-    "moduleResolution": "NodeNext"
+    "moduleResolution": "NodeNext",
+    "allowJs": true
   },
-  "include": ["./script.ts"],
-  "exclude": []
+  "include": ["./script.ts", "./blocks.ts", "./Blocks/**/*.ts"],
+  "exclude": [
+    "Blocks/Blocks/Function/**",
+    "Blocks/Blocks/Return/**"
+  ]
 }

@@ -1,0 +1,12 @@
+import { IdGenerator } from "../../../Program/IdGenerator.js";
+export class Equal {
+    constructor(left, right) {
+        this.left = left;
+        this.right = right;
+        this.valueType = 'boolean';
+        this.id = IdGenerator.generate();
+    }
+    evaluate() {
+        return this.left.evaluate() == this.right.evaluate();
+    }
+}

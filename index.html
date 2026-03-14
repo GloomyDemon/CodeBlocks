@@ -8,19 +8,27 @@
         <script type="module" src="script.js"></script>
     </head>
     <body>
-        <div class="block-library-body">
-            <div class="block-library-header">
-                <p>Block Library</p>
-                <button id="run-adapter-btn" type="button">Build AST draft</button>
-                <button id="run-program-btn" type="button">Run draft</button>
-            </div>                
-            <div class="block-categories-list">
-            </div>
-            <pre id="adapter-output"></pre>
-            <pre id="run-output"></pre>
-        </div>
-        <div class="workspace">
-            <p id="Workspace-description">Working field goes there</p>
+        <div class="app-shell">
+            <button id="theme-toggle" class="theme-toggle" type="button">Dark mode</button>
+            <aside class="toolbox">
+                <div class="toolbox-header">
+                    <h1>Blocks</h1>
+                    <div class="toolbox-actions">
+                        <button id="load-bubble-btn" type="button">Bubble sort</button>
+                        <button id="run-program-btn" type="button">Run</button>
+                    </div>
+                </div>
+                <div class="toolbox-body">
+                    <nav id="category-list"></nav>
+                    <div id="flyout"></div>
+                </div>
+                <div class="toolbox-output">
+                    <pre id="run-output"></pre>
+                </div>
+            </aside>
+            <main class="workspace">
+                <div id="workspace-canvas"></div>
+            </main>
         </div>
     </body>
 </html>

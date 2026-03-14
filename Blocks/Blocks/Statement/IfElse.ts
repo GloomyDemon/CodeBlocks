@@ -1,6 +1,6 @@
-import type { IExecutable } from "../../Interfaces/IExecutable.ts";
-import { Container } from "../../Program/Container.ts";
-import { If } from "./If.ts";
+import type { IExecutable } from "../../Interfaces/IExecutable.js";
+import { Container } from "../../Program/Container.js";
+import { If } from "./If.js";
 
 export class IfElse extends If{
 

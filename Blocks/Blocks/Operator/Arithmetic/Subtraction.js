@@ -1,0 +1,12 @@
+import { IdGenerator } from "../../../Program/IdGenerator.js";
+export class Subtraction {
+    constructor(left, right) {
+        this.left = left;
+        this.right = right;
+        this.valueType = 'number';
+        this.id = IdGenerator.generate();
+    }
+    evaluate() {
+        return this.left.evaluate() - this.right.evaluate();
+    }
+}
